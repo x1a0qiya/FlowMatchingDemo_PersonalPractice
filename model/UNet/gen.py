@@ -9,11 +9,20 @@ image_size = 128
 loaded_model = UNet(in_channels=3, out_channels=3, base_channels=64).to(device)
 
 save_path = "checkpoints/unet_latest.pth" 
-weights = torch.load(save_path, map_location=device, weights_only=True)
+unet_data = torch.load(save_path, map_location=device, weights_only=True)
 
-loaded_model.load_state_dict(weights)
+if isinstance(unet_data, dict) and 'ema_model_state_dict' in unet_data:
+    print("Found EMA weights, preparing to load...")
+    ema_state_dict = unet_data['ema_model_state_dict']
+        
+    loaded_model.load_state_dict(ema_state_dict)
+    print("Successfully loaded the EMA U-Net model!")
+
+else:
+    loaded_model.load_state_dict(unet_data['model_state_dict'])
+    print("Warning: EMA weights not found, loaded standard U-Net weights.")
+
 loaded_model.eval()
-
 print("Successfully load the U-Net model, start drawing")
 
 batch_size = 1
